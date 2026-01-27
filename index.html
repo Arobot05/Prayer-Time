@@ -426,6 +426,14 @@ let iqamahDelays = { fajr: 15, dhuhr: 10, asr: 10, maghrib: 2, isha: 10 };
 let todayPrayers = null;
 let currentMonth = '';
 
+(function () {
+    const RELOAD_INTERVAL = 15 * 60 * 1000; // 15 minutes
+
+    setTimeout(function () {
+      window.location.reload();
+    }, RELOAD_INTERVAL);
+  })();
+    
 // Get prayer for a date (uses closest earlier date or May default)
 function getPrayerForDate(dateStr) {
     if (PRAYER_DATA[dateStr]) return PRAYER_DATA[dateStr];
