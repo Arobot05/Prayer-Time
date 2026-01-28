@@ -58,8 +58,179 @@
         .footer { text-align: center; padding: 10px; font-size: 0.75rem; opacity: 0.7; }
         @media (max-width: 360px) { .countdown-time { font-size: 3rem; } .countdown-label { font-size: 1.5rem; } }
     </style>
+
+<style>
+/* ===== PORTRAIT ROTATION FOR VERTICALLY MOUNTED TV =====
+   Default: rotate 90deg clockwise (text reads correctly when TV is mounted with right side down).
+   If it is the other way, open the URL with: ?rot=left  (or change --rot to -90deg)
+*/
+:root { --rot: 90deg; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* Keep original background but avoid flex/layout issues on some Android TV WebViews */
+body {
+  display: block !important;
+  min-height: 100vh;
+}
+
+/* Stage covers the entire physical screen */
+#rotateStage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Inner becomes the "portrait canvas" */
+#rotateInner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100vh;
+  height: 100vw;
+  transform: translate(-50%, -50%) rotate(var(--rot));
+  transform-origin: center center;
+  overflow: hidden;
+}
+
+/* After rotation, allow internal scrolling for setup tab */
+.content {
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+</style>
+
+
+<style>
+/* ===== PORTRAIT FRIENDLY 3-COLUMN TABLE (READABLE @ ~3m) ===== */
+.vertical-table{
+  width: min(92vw, 980px);
+  margin: 18px auto;
+  border-collapse: collapse;
+  table-layout: auto; /* allow columns to size naturally */
+}
+.vertical-table th {
+  font-size: 2.1rem;
+  padding: 18px 14px;
+  background: rgba(255,255,255,0.10);
+  font-weight: 900;
+}
+
+.vertical-table td {
+  font-size: 2.0rem;
+  padding: 18px 14px;
+  text-align: center;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.vertical-table td:first-child{
+  text-align: left;
+  font-weight: 950;
+  padding-left: 18px;
+}
+/* proportional column widths */
+.vertical-table th:nth-child(1), .vertical-table td:nth-child(1){ width: 36%; }
+.vertical-table th:nth-child(2), .vertical-table td:nth-child(2){ width: 32%; }
+.vertical-table th:nth-child(3), .vertical-table td:nth-child(3){ width: 32%; }
+
+.vertical-table tr{ border-bottom: 2px solid rgba(255,255,255,0.18); }
+
+/* smaller portrait canvases */
+@media (max-width: 900px){
+  .vertical-table th{ font-size: 1.8rem; padding: 14px 10px; }
+  .vertical-table td{ font-size: 1.75rem; padding: 16px 10px; }
+}
+</style>
+
+
+<style>
+/* ===== PORTRAIT: make counters readable at distance ===== */
+.big-clock { font-size: 5.8rem !important; }
+.counter-time { font-size: 4.2rem !important; }
+.counter-label { font-size: 2.0rem !important; }
+</style>
+
+
+<style>
+/* ===== VERTICAL SCREEN TABLE OVERRIDES ===== */
+.times-table.vertical-table {
+  table-layout: auto !important;
+  width: 96% !important;
+  max-width: 1000px;
+  margin: 18px auto !important;
+}
+.times-table.vertical-table th, 
+.times-table.vertical-table td {
+  font-size: 2.2rem !important;
+  padding: 22px 16px !important;
+  font-weight: 800;
+}
+.times-table.vertical-table th {
+  font-weight: 900;
+}
+.times-table.vertical-table td:first-child {
+  text-align: left;
+  padding-left: 20px !important;
+}
+@media (max-width: 900px) {
+  .times-table.vertical-table th, 
+  .times-table.vertical-table td { font-size: 1.8rem !important; padding: 18px 12px !important; }
+}
+</style>
+
+
+<style>
+/* ===== NEXT PRAYER PANEL (PORTRAIT TV) ===== */
+.next-panel{
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto 10px auto;
+  padding: 14px 16px;
+  border: 2px solid rgba(255,255,255,0.20);
+  border-radius: 16px;
+  background: rgba(0,0,0,0.18);
+}
+.next-title{
+  font-size: 2.3rem;
+  font-weight: 900;
+  text-align: center;
+  margin-bottom: 10px;
+}
+.next-times{
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+.next-time-row{
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+}
+.nt-label{
+  font-size: 1.8rem;
+  font-weight: 800;
+  opacity: 0.92;
+}
+.nt-time{
+  font-size: 2.2rem;
+  font-weight: 900;
+}
+</style>
+
 </head>
 <body>
+<div id="rotateStage"><div id="rotateInner">
     <div class="header">
         <div class="app-title">🌙 SIEA Prayer Time</div>
         <div class="date-display" id="dateDisplay">Loading...</div>
@@ -71,19 +242,58 @@
     </div>
     <div class="content">
         <div id="displayTab" class="display-tab active">
-            <table class="times-table">
-                <thead><tr><th></th><th>Fajr</th><th>Dhuhr</th><th>Asr</th><th>Maghrib</th><th>Isha</th></tr></thead>
-                <tbody>
-                    <tr><td>Azan</td><td id="fajrAzan">--:--</td><td id="dhuhrAzan">--:--</td><td id="asrAzan">--:--</td><td id="maghribAzan">--:--</td><td id="ishaAzan">--:--</td></tr>
-                    <tr><td>Iqamah</td><td id="fajrIqamah">--:--</td><td id="dhuhrIqamah">--:--</td><td id="asrIqamah">--:--</td><td id="maghribIqamah">--:--</td><td id="ishaIqamah">--:--</td></tr>
-                </tbody>
-            </table>
+            
+<table class="times-table vertical-table">
+  <thead>
+    <tr>
+      <th>Prayer</th>
+      <th>Azan</th>
+      <th>Iqamah</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Fajr</td>
+      <td id="azan-fajr">--:--</td>
+      <td id="iqamah-fajr">--:--</td>
+    </tr>
+    <tr>
+      <td>Dhuhr</td>
+      <td id="azan-dhuhr">--:--</td>
+      <td id="iqamah-dhuhr">--:--</td>
+    </tr>
+    <tr>
+      <td>Asr</td>
+      <td id="azan-asr">--:--</td>
+      <td id="iqamah-asr">--:--</td>
+    </tr>
+    <tr>
+      <td>Maghrib</td>
+      <td id="azan-maghrib">--:--</td>
+      <td id="iqamah-maghrib">--:--</td>
+    </tr>
+    <tr>
+      <td>Isha</td>
+      <td id="azan-isha">--:--</td>
+      <td id="iqamah-isha">--:--</td>
+    </tr>
+  </tbody>
+</table>
+
             <div class="countdown-box">
-                <div class="countdown-label" id="countdownLabel">Fajr Azan</div>
-                <div class="countdown-time" id="countdownTime">--:--:--</div>
-                <div class="countdown-status" id="countdownStatus">in</div>
-                <div class="current-time" id="currentTime">Current: --:--:--</div>
-            </div>
+  <div class="next-panel">
+    <div class="next-title" id="nextPrayerName">Next Prayer</div>
+    <div class="next-times">
+      <div class="next-time-row"><span class="nt-label">Azan</span><span class="nt-time" id="nextAzanTime">--:--</span></div>
+      <div class="next-time-row"><span class="nt-label">Iqamah</span><span class="nt-time" id="nextIqamahTime">--:--</span></div>
+    </div>
+  </div>
+
+  <div class="countdown-label" id="countdownLabel">Iqamah</div>
+  <div class="countdown-time" id="countdownTime">--:--:--</div>
+  <div class="countdown-status" id="countdownStatus"></div>
+  <div class="current-time" id="currentTime">Current: --:--:--</div>
+</div>
         </div>
         <div id="settingsTab" class="settings-tab">
             <div class="section-title">⏱️ Iqamah Delay (minutes)</div>
@@ -451,6 +661,8 @@ function init() {
     renderMonthTabs();
     updateDisplay();
     setInterval(updateDisplay, 1000);
+  fillVerticalTable();
+
 }
 
 function loadSettings() {
@@ -470,35 +682,51 @@ function loadSettings() {
     }
 }
 
+function localISODate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function loadTodayPrayers() {
-    const today = new Date().toISOString().split('T')[0];
+    const today = localISODate(new Date());
     todayPrayers = getPrayerForDate(today);
+  fillVerticalTable();
+
+}
+
+function safeSetText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
 }
 
 function updateDisplay() {
     const now = new Date();
     const dateStr = now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
     const timeStr = now.toLocaleTimeString('en-GB');
-    document.getElementById('dateDisplay').textContent = dateStr;
-    document.getElementById('currentTime').textContent = `Current: ${timeStr}`;
+    safeSetText('dateDisplay', dateStr);
+    safeSetText('currentTime', `Current: ${timeStr}`);
 
-    const todayIso = now.toISOString().split('T')[0];
+    const todayIso = localISODate(now);
     const todayIqamah = getIqamahForDate(todayIso);
 
     if (todayPrayers) {
-        document.getElementById('fajrAzan').textContent = todayPrayers.fajr;
-        document.getElementById('dhuhrAzan').textContent = todayPrayers.dhuhr;
-        document.getElementById('asrAzan').textContent = todayPrayers.asr;
-        document.getElementById('maghribAzan').textContent = todayPrayers.maghrib;
-        document.getElementById('ishaAzan').textContent = todayPrayers.isha;
+        safeSetText('fajrAzan', todayPrayers.fajr);
+        safeSetText('dhuhrAzan', todayPrayers.dhuhr);
+        safeSetText('asrAzan', todayPrayers.asr);
+        safeSetText('maghribAzan', todayPrayers.maghrib);
+        safeSetText('ishaAzan', todayPrayers.isha);
 
-        document.getElementById('fajrIqamah').textContent = (todayIqamah && todayIqamah.fajr) ? todayIqamah.fajr : addMinutes(todayPrayers.fajr, iqamahDelays.fajr);
-        document.getElementById('dhuhrIqamah').textContent = (todayIqamah && todayIqamah.dhuhr) ? todayIqamah.dhuhr : addMinutes(todayPrayers.dhuhr, iqamahDelays.dhuhr);
-        document.getElementById('asrIqamah').textContent = (todayIqamah && todayIqamah.asr) ? todayIqamah.asr : addMinutes(todayPrayers.asr, iqamahDelays.asr);
-        document.getElementById('maghribIqamah').textContent = addMinutes(todayPrayers.maghrib, 2);
-        document.getElementById('ishaIqamah').textContent = (todayIqamah && todayIqamah.isha) ? todayIqamah.isha : addMinutes(todayPrayers.isha, iqamahDelays.isha);
+        safeSetText('fajrIqamah', (todayIqamah && todayIqamah.fajr) ? todayIqamah.fajr : addMinutes(todayPrayers.fajr, iqamahDelays.fajr));
+        safeSetText('dhuhrIqamah', (todayIqamah && todayIqamah.dhuhr) ? todayIqamah.dhuhr : addMinutes(todayPrayers.dhuhr, iqamahDelays.dhuhr));
+        safeSetText('asrIqamah', (todayIqamah && todayIqamah.asr) ? todayIqamah.asr : addMinutes(todayPrayers.asr, iqamahDelays.asr));
+        safeSetText('maghribIqamah', addMinutes(todayPrayers.maghrib, 2));
+        safeSetText('ishaIqamah', (todayIqamah && todayIqamah.isha) ? todayIqamah.isha : addMinutes(todayPrayers.isha, iqamahDelays.isha));
     }
     updateCountdown(now);
+  fillVerticalTable();
+
 }
 
 function addMinutes(timeStr, mins) {
@@ -518,50 +746,94 @@ function parseTime(timeStr) {
 function updateCountdown(now) {
     if (!todayPrayers) return;
 
-    const todayIso = now.toISOString().split('T')[0];
+    const GRACE_MS = 60 * 1000; // 60 seconds after Iqamah
+
+    const todayIso = localISODate(now);
     const todayIqamah = getIqamahForDate(todayIso);
 
-    const prayers = [
-        { name: 'Fajr', azan: todayPrayers.fajr, iqamah: (todayIqamah && todayIqamah.fajr) ? todayIqamah.fajr : addMinutes(todayPrayers.fajr, iqamahDelays.fajr) },
-        { name: 'Dhuhr', azan: todayPrayers.dhuhr, iqamah: (todayIqamah && todayIqamah.dhuhr) ? todayIqamah.dhuhr : addMinutes(todayPrayers.dhuhr, iqamahDelays.dhuhr) },
-        { name: 'Asr', azan: todayPrayers.asr, iqamah: (todayIqamah && todayIqamah.asr) ? todayIqamah.asr : addMinutes(todayPrayers.asr, iqamahDelays.asr) },
-        { name: 'Maghrib', azan: todayPrayers.maghrib, iqamah: addMinutes(todayPrayers.maghrib, 2) },
-        { name: 'Isha', azan: todayPrayers.isha, iqamah: (todayIqamah && todayIqamah.isha) ? todayIqamah.isha : addMinutes(todayPrayers.isha, iqamahDelays.isha) }
+    // Build per-prayer Azan/Iqamah times for TODAY (Iqamah from table where available; Maghrib = Azan + 2 minutes)
+    const prayersToday = [
+        { key:'fajr',    name:'Fajr',    azan: todayPrayers.fajr,    iqamah: (todayIqamah && todayIqamah.fajr)   ? todayIqamah.fajr   : addMinutes(todayPrayers.fajr,    iqamahDelays.fajr) },
+        { key:'dhuhr',   name:'Dhuhr',   azan: todayPrayers.dhuhr,   iqamah: (todayIqamah && todayIqamah.dhuhr)  ? todayIqamah.dhuhr  : addMinutes(todayPrayers.dhuhr,   iqamahDelays.dhuhr) },
+        { key:'asr',     name:'Asr',     azan: todayPrayers.asr,     iqamah: (todayIqamah && todayIqamah.asr)    ? todayIqamah.asr    : addMinutes(todayPrayers.asr,     iqamahDelays.asr) },
+        { key:'maghrib', name:'Maghrib', azan: todayPrayers.maghrib, iqamah: addMinutes(todayPrayers.maghrib, 2) },
+        { key:'isha',    name:'Isha',    azan: todayPrayers.isha,    iqamah: (todayIqamah && todayIqamah.isha)   ? todayIqamah.isha   : addMinutes(todayPrayers.isha,    iqamahDelays.isha) }
     ];
 
-    let nextLabel = '';
-    let nextTime = null;
-
-    for (const p of prayers) {
+    // Find current/next slot for TODAY, including 60s grace after Iqamah
+    let slot = null;
+    for (const p of prayersToday) {
         const azanTime = parseTime(p.azan);
         const iqamahTime = parseTime(p.iqamah);
+        const graceEnd = new Date(iqamahTime.getTime() + GRACE_MS);
 
-        if (now < azanTime) {
-            nextLabel = `${p.name} Azan`;
-            nextTime = azanTime;
-            break;
-        } else if (now < iqamahTime) {
-            nextLabel = `${p.name} Iqamah`;
-            nextTime = iqamahTime;
+        if (now < graceEnd) {
+            slot = { ...p, azanTime, iqamahTime, graceEnd, day: 'today' };
             break;
         }
     }
 
-    if (!nextTime) {
-        nextLabel = 'Fajr Azan';
-        nextTime = parseTime(todayPrayers.fajr);
-        nextTime.setDate(nextTime.getDate() + 1);
+    // If after Isha grace -> use TOMORROW Fajr (from data, not by shifting today's time)
+    if (!slot) {
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowIso = localISODate(tomorrow);
+
+        const tomorrowPrayers = getPrayerForDate(tomorrowIso);
+        const tomorrowIqamah = getIqamahForDate(tomorrowIso);
+
+        const azanStr = tomorrowPrayers.fajr || todayPrayers.fajr;
+        const iqamahStr =
+          (tomorrowIqamah && tomorrowIqamah.fajr)
+            ? tomorrowIqamah.fajr
+            : addMinutes(azanStr, iqamahDelays.fajr);
+
+        const azanTime = parseTime(azanStr);
+        const iqamahTime = parseTime(iqamahStr);
+
+        // Ensure date is tomorrow
+        azanTime.setFullYear(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
+        iqamahTime.setFullYear(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
+
+        slot = { key:'fajr', name:'Fajr', azan: azanStr, iqamah: iqamahStr, azanTime, iqamahTime, graceEnd: new Date(iqamahTime.getTime() + GRACE_MS), day: 'tomorrow' };
     }
 
-    const diff = Math.max(0, Math.floor((nextTime - now) / 1000));
-    const h = String(Math.floor(diff / 3600)).padStart(2, '0');
-    const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
-    const s = String(diff % 60).padStart(2, '0');
+    // Update "Next Prayer" panel (always)
+    safeSetText('nextPrayerName', `Next: ${slot.name}${slot.day === 'tomorrow' ? ' (Tomorrow)' : ''}`);
+    safeSetText('nextAzanTime', String(slot.azan).slice(0,5));
+    safeSetText('nextIqamahTime', String(slot.iqamah).slice(0,5));
 
-    document.getElementById('countdownLabel').textContent = nextLabel;
-    document.getElementById('countdownTime').textContent = `${h}:${m}:${s}`;
-    document.getElementById('countdownStatus').textContent = diff > 0 ? 'in' : 'NOW!';
+    // Behaviour phases
+    if (now < slot.azanTime) {
+        // Before Azan: show static info, no reverse counter
+        safeSetText('countdownLabel', `Next Iqamah`);
+        safeSetText('countdownTime', String(slot.iqamah).slice(0,5));
+        safeSetText('countdownStatus', '');
+        return;
+    }
+
+    if (now >= slot.azanTime && now < slot.iqamahTime) {
+        // Reverse countdown to Iqamah
+        const diff = Math.max(0, Math.floor((slot.iqamahTime - now) / 1000));
+        const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+        const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+        const s = String(diff % 60).padStart(2, '0');
+
+        safeSetText('countdownLabel', `${slot.name} Iqamah`);
+        safeSetText('countdownTime', `${h}:${m}:${s}`);
+        safeSetText('countdownStatus', 'in');
+        return;
+    }
+
+    if (now >= slot.iqamahTime && now < slot.graceEnd) {
+        // Iqamah Now for 60 seconds, then it will advance automatically (via slot selection next tick)
+        safeSetText('countdownLabel', `${slot.name} Iqamah`);
+        safeSetText('countdownTime', 'NOW');
+        safeSetText('countdownStatus', '');
+        return;
+    }
 }
+
 
 function switchTab(tab) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -660,6 +932,69 @@ function showToast(msg) {
 
 document.addEventListener('DOMContentLoaded', init);
 </script>
+
+
+
+
+<script>
+  // Local-safe auto-reload (Android TV friendly): one-shot reload after 15 minutes.
+  // Avoids setInterval/localStorage/visibility handlers that can cause reload loops on some TV browsers.
+  setTimeout(function () {
+    location.href = location.href;
+  }, 15 * 60 * 1000);
+</script>
+
+</div></div>
+
+<script>
+(function () {
+  try {
+    var p = new URLSearchParams(location.search);
+    var rot = (p.get('rot') || '').toLowerCase();
+    document.documentElement.style.setProperty('--rot', rot === 'left' ? '-90deg' : '90deg');
+  } catch (e) {}
+})();
+</script>
+
+
+
+<script>
+function fillVerticalTable() {
+  try {
+    if (typeof todayPrayers === 'undefined' || !todayPrayers) return;
+
+    const dateKey = (typeof localISODate === 'function') ? localISODate(new Date()) : (new Date().toISOString().split('T')[0]);
+    const iq = (typeof IQAMAH_DATA !== 'undefined' && IQAMAH_DATA && IQAMAH_DATA[dateKey]) ? IQAMAH_DATA[dateKey] : null;
+
+    const keys = ['fajr','dhuhr','asr','maghrib','isha'];
+
+    keys.forEach((key) => {
+      const az = todayPrayers[key];
+      const azEl = document.getElementById('azan-' + key);
+      if (azEl) azEl.textContent = az || '--:--';
+
+      let iqTime = '--:--';
+
+      if (key === 'maghrib') {
+        // Always 2 minutes after Azan
+        if (az) iqTime = addMinutes(az, 2);
+      } else {
+        // Prefer IQAMAH_DATA (exact times), fallback to delay logic if needed
+        if (iq && iq[key]) {
+          iqTime = iq[key];
+        } else if (az && typeof iqamahDelays !== 'undefined' && iqamahDelays) {
+          iqTime = addMinutes(az, iqamahDelays[key] || 0);
+        }
+      }
+
+      const iqEl = document.getElementById('iqamah-' + key);
+      if (iqEl) iqEl.textContent = iqTime;
+    });
+  } catch (e) {
+    // Fail silently on TV browsers
+  }
+}
+</script>
+
 </body>
 </html>
-
